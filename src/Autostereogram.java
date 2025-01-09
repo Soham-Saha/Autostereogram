@@ -7,52 +7,66 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 /***
- * @Website https://blog.demofox.org/2023/10/22/how-to-make-your-own-spooky-magic-eye-pictures-autostereograms/
+ * Idea from
+ * https://blog.demofox.org/2023/10/22/how-to-make-your-own-spooky-magic-eye-pictures-autostereograms/
  */
 
 public class Autostereogram {
-	static double max_offset = 20;
+	static double max_offset = 40;
 	static BufferedImage tile;
 	static BufferedImage dm;
-	static BufferedImage img;
-	static int tileside;
+	static BufferedImage output;
+
+	private static void initTile() throws IOException {
+		// Note that you needed MESSY/CROWDED wallpaper tiles
+
+		tile = ImageIO.read(new File("imgfiles\\tile.jpeg"));
+
+		/*-tile = new BufferedImage(120, 120, BufferedImage.TYPE_INT_ARGB);
+		int black = Color.black.getRGB();
+		for (int i = 0; i < tile.getWidth(); i++) {
+			for (int j = 0; j < tile.getHeight(); j++) {
+				if (Math.random() > 0.9) {
+					tile.setRGB(j, i, black);
+				}
+			}
+		}*/
+	}
+
+	private static void initDepthMap() throws IOException {
+		dm = ImageIO.read(new File("imgfiles\\depthmap.jpg"));
+	}
 
 	public static void main(String[] args) throws IOException {
 		// TODO: don't call img.getWidth() etc. multiple times, store in var.
-		// Note that you needed MESSY/CROWDED wallpaper tiles
-		tile = ImageIO.read(new File("imgfiles\\tile2.jpeg"));
-		dm = ImageIO.read(new File("imgfiles\\depthmap.jpg"));
-		if (tile.getWidth() != tile.getHeight()) {
-			//TODO: most prob not needed anymore.
-			System.err.println("Tile width and height different. Not supported. Get coding!");
-			System.exit(0);
-		}
-		tileside = tile.getWidth();
-		img = new BufferedImage(dm.getWidth() + tileside, dm.getHeight(), BufferedImage.TYPE_INT_ARGB_PRE);
+
+		initTile();
+		initDepthMap();
+		output = new BufferedImage(dm.getWidth() + tile.getWidth(), dm.getHeight(), BufferedImage.TYPE_INT_ARGB_PRE);
 
 		// Initialize left column
-		for (int x = 0; x < tileside; x++) {
-			for (int y = 0; y < img.getHeight(); y++) {
-				img.setRGB(x, y, tile.getRGB(x, y % tileside));
+		for (int x = 0; x < tile.getWidth(); x++) {
+			for (int y = 0; y < output.getHeight(); y++) {
+				output.setRGB(x, y, tile.getRGB(x, y % tile.getHeight()));
 			}
 		}
 
 		// Now for the rest of the image...
 		for (int y = 0; y < dm.getHeight(); y++) {
 			for (int x = 0; x < dm.getWidth(); x++) {
-				img.setRGB(x + tile.getWidth(), y, img.getRGB((x + offset(x, y)), y));
+				output.setRGB(x + tile.getWidth(), y, output.getRGB((x + offset(x, y)), y));
 			}
 		}
-		Graphics2D g = (Graphics2D) img.getGraphics();
+		Graphics2D g = (Graphics2D) output.getGraphics();
 		g.setColor(Color.white);
-		g.fillRect(img.getWidth() / 2 - tileside / 2 - 5, 5, 10, 10);
-		g.fillRect(img.getWidth() / 2 + tileside / 2 - 5, 5, 10, 10);
+		g.fillRect(output.getWidth() / 2 - tile.getWidth() / 2 - 10, 10, 10, 10);
+		g.fillRect(output.getWidth() / 2 + tile.getWidth() / 2 - 10, 10, 10, 10);
 
-		ImageIO.write(img, "png", new File("imgfiles\\out.png"));
+		ImageIO.write(output, "png", new File("imgfiles\\out.png"));
 	}
 
 	private static int offset(int x, int y) {
-		double norm_depth = 1 - (double) new Color(dm.getRGB(x, y)).getRed() / 255;
+		double norm_depth = 1 - (double) (dm.getRGB(x, y) & 0xFF) / 255;
 		return (int) (norm_depth * max_offset);
 	}
 }
