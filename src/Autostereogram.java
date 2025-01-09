@@ -18,22 +18,26 @@ public class Autostereogram {
 	static int tileside;
 
 	public static void main(String[] args) throws IOException {
+		// TODO: don't call img.getWidth() etc. multiple times, store in var.
 		// Note that you needed MESSY/CROWDED wallpaper tiles
 		tile = ImageIO.read(new File("imgfiles\\tile2.jpeg"));
 		dm = ImageIO.read(new File("imgfiles\\depthmap.jpg"));
 		if (tile.getWidth() != tile.getHeight()) {
+			//TODO: most prob not needed anymore.
 			System.err.println("Tile width and height different. Not supported. Get coding!");
 			System.exit(0);
 		}
-		tileside = tile.getTileWidth();
+		tileside = tile.getWidth();
 		img = new BufferedImage(dm.getWidth() + tileside, dm.getHeight(), BufferedImage.TYPE_INT_ARGB_PRE);
 
 		// Initialize left column
-		for (int i = 0; i < dm.getHeight() / tileside; i++) {
-			img.setRGB(0, tileside * i, tileside, tileside, tile.getRGB(0, 0, tileside, tileside, null, 0, tileside), 0, tileside);
+		for (int x = 0; x < tileside; x++) {
+			for (int y = 0; y < img.getHeight(); y++) {
+				img.setRGB(x, y, tile.getRGB(x, y % tileside));
+			}
 		}
 
-		// Now for the other parts...
+		// Now for the rest of the image...
 		for (int y = 0; y < dm.getHeight(); y++) {
 			for (int x = 0; x < dm.getWidth(); x++) {
 				img.setRGB(x + tile.getWidth(), y, img.getRGB((x + offset(x, y)), y));
